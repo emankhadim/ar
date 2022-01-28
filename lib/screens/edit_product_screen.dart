@@ -1,4 +1,7 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_complete_guide/providers/StorageService.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
@@ -18,6 +21,8 @@ class _EditProductScreenState extends State<EditProductScreen> {
   File _i;
   final _descriptionFocusNode = FocusNode();
   final _imageUrlController = TextEditingController();
+  final List<String> imgUrlList = [];
+  final List<File> imgFilesList = [];
   final _imageUrlFocusNode = FocusNode();
   final _form = GlobalKey<FormState>();
   var _editedProduct = Product(
@@ -75,9 +80,9 @@ class _EditProductScreenState extends State<EditProductScreen> {
 
   void _updateImageUrl() {
     if (!_imageUrlFocusNode.hasFocus) {
-      if(
-      // if ((!_imageUrlController.text.startsWith('http') &&
-      //         !_imageUrlController.text.startsWith('https')) ||
+      if (
+          // if ((!_imageUrlController.text.startsWith('http') &&
+          //         !_imageUrlController.text.startsWith('https')) ||
           (!_imageUrlController.text.endsWith('.png') &&
               !_imageUrlController.text.endsWith('.jpg') &&
               !_imageUrlController.text.endsWith('.jpeg'))) {
@@ -86,13 +91,19 @@ class _EditProductScreenState extends State<EditProductScreen> {
       setState(() {});
     }
   }
-  Future<void> pickimage() async{
+
+  Future<void> pickimage() async {
     var image = await _img.pickImage(source: ImageSource.gallery);
-    setState(() {
-      _i=File(image.path);
-      print(_i.path.toString());
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content:Text("image is selected")));
-    });
+    setState(
+      () {
+        _i = File(image.path);
+        imgFilesList.add(File(image.path));
+
+        print(_i.path.toString());
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text("image is selected")));
+      },
+    );
   }
 
   Future<void> _saveForm() async {
@@ -100,10 +111,13 @@ class _EditProductScreenState extends State<EditProductScreen> {
     if (!isValid) {
       return;
     }
+
     _form.currentState.save();
     setState(() {
       _isLoading = true;
     });
+
+    _imageUrlController.text = imgUrlList.first ?? "No URL";
     if (_editedProduct.id != null) {
       await Provider.of<Products>(context, listen: false)
           .updateProduct(_editedProduct.id, _editedProduct);
@@ -115,17 +129,17 @@ class _EditProductScreenState extends State<EditProductScreen> {
         await showDialog(
           context: context,
           builder: (ctx) => AlertDialog(
-                title: Text('An error occurred!'),
-                content: Text('Something went wrong.'),
-                actions: <Widget>[
-                  FlatButton(
-                    child: Text('Okay'),
-                    onPressed: () {
-                      Navigator.of(ctx).pop();
-                    },
-                  )
-                ],
-              ),
+            title: Text('An error occurred!'),
+            content: Text('Something went wrong.'),
+            actions: <Widget>[
+              FlatButton(
+                child: Text('Okay'),
+                onPressed: () {
+                  Navigator.of(ctx).pop();
+                },
+              )
+            ],
+          ),
         );
       }
       // finally {
@@ -214,7 +228,8 @@ class _EditProductScreenState extends State<EditProductScreen> {
                             title: _editedProduct.title,
                             price: double.parse(value),
                             description: _editedProduct.description,
-                            imageUrl: _editedProduct.imageUrl,
+                            imageUrl: imgUrlList?.first ?? "No Image",
+                            // imageUrl: _editedProduct.imageUrl,
                             id: _editedProduct.id,
                             isFavorite: _editedProduct.isFavorite);
                       },
@@ -239,83 +254,96 @@ class _EditProductScreenState extends State<EditProductScreen> {
                           title: _editedProduct.title,
                           price: _editedProduct.price,
                           description: value,
-                          imageUrl: _editedProduct.imageUrl,
+                          imageUrl: imgUrlList.first,
+                          // imageUrl: _editedProduct.imageUrl,
                           id: _editedProduct.id,
                           isFavorite: _editedProduct.isFavorite,
                         );
                       },
                     ),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: <Widget>[
-                        Container(
-                          width: 100,
-                          height: 100,
-                          margin: EdgeInsets.only(
-                            top: 8,
-                            right: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              width: 1,
-                              color: Colors.grey,
-                            ),
-                          ),
-                          child: _imageUrlController.text.isEmpty
-                              ? Text('Enter a URL')
-                              : FittedBox(
-                              child:Image.file(_i,fit: BoxFit.fill,)),
-                            // Image.network(
-                                  //   _imageUrlController.text,
-                                  //   fit: BoxFit.cover,
-                                  ),
-
-                        ]),
-                        // Expanded(
-                        //   child: TextFormField(
-                        //     decoration: InputDecoration(labelText: 'Image URL'),
-                        //     keyboardType: TextInputType.url,
-                        //     textInputAction: TextInputAction.done,
-                        //     controller: _imageUrlController,
-                        //     focusNode: _imageUrlFocusNode,
-                        //     onFieldSubmitted: (_) {
-                        //       _saveForm();
-                        //     },
-                        //     validator: (value) {
-                        //       if (value.isEmpty) {
-                        //         return 'Please enter an image URL.';
-                        //       }
-                        //       if (!value.startsWith('http') &&
-                        //           !value.startsWith('https')) {
-                        //         return 'Please enter a valid URL.';
-                        //       }
-                        //       if (!value.endsWith('.png') &&
-                        //           !value.endsWith('.jpg') &&
-                        //           !value.endsWith('.jpeg')) {
-                        //         return 'Please enter a valid image URL.';
-                        //       }
-                        //       return null;
-                        //     },
-                        //     onSaved: (value) {
-                        //       _editedProduct = Product(
-                        //         title: _editedProduct.title,
-                        //         price: _editedProduct.price,
-                        //         description: _editedProduct.description,
-                        //         imageUrl: value,
-                        //         id: _editedProduct.id,
-                        //         isFavorite: _editedProduct.isFavorite,
-                        //       );
-                        //     },
-                        //   ),
-                        // ),
-                        TextButton(
-                          child: Text("upload image"),
-                          onPressed: ()=>pickimage(),
+                    Container(
+                      width: MediaQuery.of(context).size.width,
+                      // height: 200,
+                      margin: EdgeInsets.only(
+                        top: 8,
+                        // right: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          width: 1,
+                          color: Colors.grey,
                         ),
-                      ],
+                      ),
+                      child: imgFilesList.isEmpty
+                          ? Text('Pick few Images to upload')
+                          : GridView.builder(
+                              physics: NeverScrollableScrollPhysics(),
+                              gridDelegate:
+                                  SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 3,
+                              ),
+                              shrinkWrap: true,
+                              itemCount: imgFilesList.length,
+                              itemBuilder: (context, index) {
+                                return Container(
+                                  height: 150,
+                                  width: 150,
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      width: 1,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                  child: Image.file(
+                                    imgFilesList[index],
+                                    fit: BoxFit.cover,
+                                  ),
+                                );
+                              },
+                            ),
                     ),
+                    MaterialButton(
+                      color: Colors.purple,
+                      child: Text(
+                        "Select Image",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      onPressed: () => pickimage(),
+                    ),
+                    MaterialButton(
+                      color: Colors.purple,
+                      child: Text(
+                        "Upload Images",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      onPressed: () async {
+                        log('Uplaoding started');
+                        try {
+                          for (int i = 0; i < imgFilesList.length; i++) {
+                            String imgURL = await StorageService()
+                                .uploadImage(imgFilesList[i]);
+                            log('Uloading image number: ' + i.toString());
+                            imgUrlList.add(imgURL);
+                            imgURL = '';
+                          }
+                        } catch (e) {
+                          log(e.toString());
+                        }
+                        log('Uplaoding Fineshd');
+                      },
+                    ),
+                  ],
                 ),
               ),
-            );
+            ),
+    );
   }
 }

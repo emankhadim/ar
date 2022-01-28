@@ -7,12 +7,12 @@ class StorageService {
   Future<String> uploadImage(File image) async {
     String imgUrl;
     Reference ref =
-    storage.ref().child("UserProfiles/image" + DateTime.now().toString());
+        storage.ref().child("ProductImages/image" + DateTime.now().toString());
     UploadTask uploadTask = ref.putFile(image);
     await uploadTask.whenComplete(() async {
       String imgUrll = (await ref.getDownloadURL()).toString();
-      imgUrl.value = imgUrll;
+      imgUrl = imgUrll;
     });
-    return imgUrl.value!;
+    return imgUrl;
   }
 }
